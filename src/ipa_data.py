@@ -105,6 +105,9 @@ def is_symbol(symbol):
 def is_diacritic(symbol):
   return symbol in DIACRITICS
 
+def get_diacritics():
+  return DIACRITICS
+
 # Returns whether an IPA symbol is a letter, i.e., it represents a complete sound
 def is_letter(symbol):
   return symbol in LETTERS

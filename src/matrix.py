@@ -7,6 +7,9 @@ def create_arg_parser():
                     help='Path to the input directory.')
     parser.add_argument('--outputDirectory',
                     help='Path to the output that contains the results.')
+    parser.add_argument('--cc0',
+                        default=False, action='store_true',
+                        help='Constrain one of the column costs to always be 0.')
     return parser
 
 arg_parser = create_arg_parser()
@@ -16,13 +19,15 @@ fname = parsed_args.inputDirectory
 data=[]
 
 m = {'ø':'A', 'ʃ':'B', 'ɯ':'C', 'ʤ':'D', 'ʧ': 'E', 'ː':'F', 'ɛ':'G', 'ə':'H', 'ɑ': 'I', 'œ':'J', 'ŋ': 'K', 'ʋ':'L', 'ʌ':'M', 'ʊ':'N', 'ʦ':'P', 'æ':'Q', 'ʣ':'R', 'ʈ':'S', 'ɖ':'T', 'ʒ':'U', 'ɱ':'V', 'ɩ':'W', 'ɲ': 'Y'}
-diacritics = ['ʻ','ʰ','ʲ']
+diacritics = ipa_data.get_diacritics()
 
 def convert_ipa(ipa_string,dictionary):
     nipa_string = []
     # ipa_string = ipa_string.replace('kʻ','1')
     # ipa_string = ipa_string.replace('pʰ','2')
     # ipa_string = ipa_string.replace('tʰ','3')
+
+    lowercase_letters = {chr(lc) for lc in range(ord('a'),ord('z') + 1)}
     
     for ipa in ipa_string:
         if ipa in diacritics:
@@ -34,8 +39,11 @@ def convert_ipa(ipa_string,dictionary):
                 nipa_string[-1] = dictionary[new_key]
         elif ipa in dictionary.keys():
             nipa_string.append(dictionary[ipa])
-        else:
+        elif ipa in lowercase_letters: # ASCII & decoded as itself
             nipa_string.append(ipa)
+        else:
+            dictionary[ipa] = get_unused_symbol(dictionary)
+            nipa_string.append(dictionary[ipa])
     print(ipa_string," > ",nipa_string,dictionary)
     return ''.join(map(str, nipa_string))
 
@@ -266,6 +274,7 @@ def create_word(data,model):
 
 def print_rule(models):
     for model in models:
+        try:
             words = create_word(data,model)
             print(words)
             rules = get_rules(words)   
@@ -274,22 +283,36 @@ def print_rule(models):
             else:
                 print(rules)
                 return rules
+        except LookupError:
+            print("WARNING: z3str returned invalid symbols")
+            continue
+
 
 if __name__ == "__main__":
+    # Make sure that we can parse the data using the phoneme inventory
+    try:
+        phonosynth.parse([ (x,x)
+                           for xs in data
+                           for x in xs ])
+    except Exception as e:
+        print("Parsing problem:",e)
+        sys.exit(0)
+    
     z3_constraints = generate_constraints(data)
     constraints = z3_constraints[0]
     cost_constraints = z3_constraints[1]
     column_cost = z3_constraints[2]
     assert len(column_cost) == len(data[0])
     for i in range(4,20):
-        # for some reason, we only add the column cost constraint when there are 2 inflections
-        if len(data[0]) <= 2: ccs = column_cost
+        # add the column cost constraint (when there are 2 inflections???)
+        if parsed_args.cc0: ccs = column_cost
         else: ccs = [None]
         for cc in ccs:
             model = add_cost_constraint(constraints,i,cost_constraints,cc)
             
             rule = print_rule(model)
+            if rule:
+                print("Successful synthesis! Here is the rule:")
             print(rule)
             if rule:
-                #print("Successful synthesis!")
                 sys.exit(0)
