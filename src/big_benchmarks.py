@@ -18,9 +18,9 @@ def process_job(io):
     inputFile = io[0]
     outputFile = io[1]
     if "cc0" in outputFile:
-        os.system(f"timeout 24h time python matrix.py --cc0 {inputFile} &> {outputFile}")
+        os.system(f"timeout 24h time python matrix.py --cc0 {inputFile} > {outputFile} 2>&1")
     else:
-        os.system(f"timeout 24h time python matrix.py {inputFile} &> {outputFile}")
+        os.system(f"timeout 24h time python matrix.py {inputFile} > {outputFile} 2>&1")
 
 
             
