@@ -1,19 +1,29 @@
 import os
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 
 jobs = []
+alternations = []
 
 for fn in os.listdir("CSV"):
     if fn.endswith(".csv"):
         inputFile = f"CSV/{fn}"
-        for cc0 in ["","_cc0"]:
-            outputFile = f"CSV/{fn[:-len('.csv')]}{cc0}.output"
-            if not os.path.exists(outputFile):
-                print(inputFile,outputFile)
-                jobs.append((inputFile,outputFile))
-
+        alternation = False
+        with open(inputFile,"r") as handle:
+            for ln in handle:
+                alternation = alternation or ln.startswith(u"U,")
+        if alternation:
+            outputFile = f"CSV/{fn[:-len('.csv')]}.output"
+            alternations.append(fn)
+            os.system(f"time python alternation.py {inputFile} > {outputFile}  2>&1")
+        else:
+            for cc0 in ["","_cc0"]:
+                outputFile = f"CSV/{fn[:-len('.csv')]}{cc0}.output"
+                if not os.path.exists(outputFile):
+                    print(inputFile,outputFile)
+                    jobs.append((inputFile,outputFile))
+print(f"I handled the following {len(alternations)} alternations: {alternations}")
 def process_job(io):
     inputFile = io[0]
     outputFile = io[1]
@@ -24,4 +34,4 @@ def process_job(io):
 
 
             
-Pool(8).map(process_job, jobs)
+Pool(cpu_count()).map(process_job, jobs)

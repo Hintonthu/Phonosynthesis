@@ -1,5 +1,5 @@
 import csv, z3, sys, argparse
-import phonosynth, ipa_data
+import phonosynth, ipa_data, parse_ipa
 data = []
 alt_forms = []
 
@@ -25,8 +25,13 @@ with open(fname) as rf:
 
 def generate_alternating_form(data,source,fst,snd):
     possible_config = []
+    def replaceInList(l, original, new):
+        return [new if x == original else x
+                for x in l ]
     for example in data:
-        nexample = [example.replace(source[i][fst],source[i][snd]) for i in range(len(source)) if source[i][fst] in example]
+        phonemes = [u"".join(ps) for ps in parse_ipa.group_phones(example)]
+        nexample = [u"".join(replaceInList(phonemes,source[i][fst],source[i][snd]))
+                    for i in range(len(source)) if source[i][fst] in phonemes]
         if len(nexample) == 0:
             possible_config.append(example)
         if len(nexample) == 1:
@@ -37,8 +42,10 @@ def generate_alternating_form(data,source,fst,snd):
 
 configA = generate_alternating_form(data,alt_forms,0,1)
 configB = generate_alternating_form(data,alt_forms,1,0)
-wordsA = zip(configA,data)
-wordsB = zip(configB,data)
+wordsA = list(zip(configA,data))
+wordsB = list(zip(configB,data))
+print(wordsA)
+print(wordsB)
 
 def get_rules(words):
     data = phonosynth.parse(words)
@@ -97,6 +104,9 @@ if __name__ == "__main__":
     rules1 = get_rules(wordsA)
     rules2 = get_rules(wordsB)
     rule = select_rule(rules1,rules2)
-    print(rule)
+    if rule and len(rule) > 0 and rule[0]:
+        print("Successfully discovered rule:\n", rule)
+    else:
+        print("Could not discover rule.")
 
 
