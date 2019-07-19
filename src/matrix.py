@@ -56,6 +56,8 @@ def get_unused_symbol(d):
     assert False, "dictionary could not be made bigger"
 
 def convert_str(string,dictionary):
+    if string.startswith('"') and string.endswith('"'):
+        string = string[1:-1]
     nstring = []
     # string = string.replace('1','kʻ')
     # string = string.replace('2','pʰ')
