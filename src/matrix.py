@@ -10,6 +10,8 @@ def create_arg_parser():
     parser.add_argument('--cc0',
                         default=False, action='store_true',
                         help='Constrain one of the column costs to always be 0.')
+    parser.add_argument('--minimum', default=4, type=int)
+    parser.add_argument('--maximum', default=19, type=int)
     return parser
 
 arg_parser = create_arg_parser()
@@ -18,7 +20,7 @@ fname = parsed_args.inputDirectory
 
 data=[]
 
-m = {'ø':'A', 'ʃ':'B', 'ɯ':'C', 'ʤ':'D', 'ʧ': 'E', 'ː':'F', 'ɛ':'G', 'ə':'H', 'ɑ': 'I', 'œ':'J', 'ŋ': 'K', 'ʋ':'L', 'ʌ':'M', 'ʊ':'N', 'ʦ':'P', 'æ':'Q', 'ʣ':'R', 'ʈ':'S', 'ɖ':'T', 'ʒ':'U', 'ɱ':'V', 'ɩ':'W', 'ɲ': 'Y'}
+m = {'ø':'A', 'ʃ':'B', 'ɯ':'C', 'ʤ':'D', 'ʧ': 'E', 'ː':'F', 'ɛ':'G', 'ə':'H', 'ɑ': 'I', 'œ':'J', 'ŋ': 'K', 'ʋ':'L', 'ʌ':'M', 'ʊ':'N', 'ʦ':'P', 'æ':'Q', 'ʣ':'R', 'ʈ':'S', 'ɖ':'T', 'ʒ':'U', 'ɱ':'V', 'ɩ':'W', 'ɲ': 'Y', 'ɡ': 'g'}
 diacritics = ipa_data.get_diacritics()
 
 def convert_ipa(ipa_string,dictionary):
@@ -48,7 +50,7 @@ def convert_ipa(ipa_string,dictionary):
     return ''.join(map(str, nipa_string))
 
 def get_unused_symbol(d):
-    possibilities = [chr(n) for n in range(ord('A'),ord('Z')+1)] + [int(n) for n in range(1,10) ]
+    possibilities = [chr(n) for n in range(ord('A'),ord('Z')+1)] + [str(n) for n in range(1,10) ] + ["!","@","$","#","^","(",")","&","%","*",";"]
     for p in possibilities:
         if p not in d.values(): return p
     assert False, "dictionary could not be made bigger"
@@ -303,7 +305,7 @@ if __name__ == "__main__":
     cost_constraints = z3_constraints[1]
     column_cost = z3_constraints[2]
     assert len(column_cost) == len(data[0])
-    for i in range(4,20):
+    for i in range(parsed_args.minimum,parsed_args.maximum + 1):
         # add the column cost constraint (when there are 2 inflections???)
         if parsed_args.cc0: ccs = column_cost
         else: ccs = [None]
